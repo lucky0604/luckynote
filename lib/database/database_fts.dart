@@ -51,7 +51,7 @@ extension AppDatabaseFts on AppDatabase {
           ),
         );
         // 同步到 FTS5 索引表
-        await _insertFTSEntry(chunkId, heading, chunk.content);
+        await _insertFTSEntry(chunkId, title, heading, chunk.content);
       }
     });
   }
@@ -111,8 +111,8 @@ extension AppDatabaseFts on AppDatabase {
           ),
         );
 
-        // 同步到 FTS5 索引表
-        await _insertFTSEntry(chunkId, headingPath, content);
+        // 同步到 FTS5 索引表（包含标题）
+        await _insertFTSEntry(chunkId, title, headingPath, content);
       }
     });
   }
@@ -129,11 +129,13 @@ extension AppDatabaseFts on AppDatabase {
     }
   }
 
-  /// 插入 FTS5 索引条目
-  Future<void> _insertFTSEntry(int rowid, String heading, String content) async {
+  /// 插入 FTS5 索引条目（包含标题用于搜索）
+  Future<void> _insertFTSEntry(int rowid, String title, String heading, String content) async {
+    // 将标题也加入索引，便于搜索笔记名称
+    final fullContent = '$title $heading $content';
     await customStatement(
       'INSERT INTO note_search_index(rowid, heading, content) VALUES (?, ?, ?)',
-      [rowid, heading, content],
+      [rowid, heading, fullContent],
     );
   }
 
@@ -156,8 +158,7 @@ extension AppDatabaseFts on AppDatabase {
     if (ftsQuery.isEmpty) return [];
 
     try {
-      final results = await customSelect(
-        '''
+      final sql = '''
         SELECT
           nc.id,
           nc.document_id,
@@ -173,9 +174,19 @@ extension AppDatabaseFts on AppDatabase {
         WHERE note_search_index MATCH ?
         ORDER BY score
         LIMIT ?
-        ''',
-        variables: [Variable(ftsQuery), Variable(limit)],
+        ''';
+      print('[FTS5] SQL: $sql');
+      print('[FTS5] Variables: [$ftsQuery, $limit]');
+      
+      final results = await customSelect(
+        sql,
+        variables: [Variable.withString(ftsQuery), Variable.withInt(limit)],
       ).get();
+
+      print('[FTS5] Raw results: ${results.length} rows');
+      for (final row in results) {
+        print('[FTS5] Row: id=${row.read<int>('id')}, title=${row.read<String>('title')}, content=${row.read<String>('content').substring(0, (row.read<String>('content').length > 50 ? 50 : row.read<String>('content').length))}...');
+      }
 
       return results.map((row) {
         return NoteChunkResult(

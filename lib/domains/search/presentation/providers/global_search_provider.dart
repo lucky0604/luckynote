@@ -54,9 +54,16 @@ class GlobalSearchNotifier extends StateNotifier<GlobalSearchState> {
 
     _debouncer.run(() async {
       try {
+        print('[GlobalSearch] Starting search for: "$query"');
         final results = await _repo.search(query);
+        print('[GlobalSearch] Found ${results.length} results');
+        for (final r in results) {
+          print('[GlobalSearch] - ${r.title} (${r.type})');
+        }
         state = state.copyWith(results: results, isSearching: false);
-      } catch (e) {
+      } catch (e, st) {
+        print('[GlobalSearch] Error: $e');
+        print('[GlobalSearch] StackTrace: $st');
         state = state.copyWith(isSearching: false, error: e.toString());
       }
     });
