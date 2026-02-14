@@ -257,4 +257,30 @@ abstract final class AppColors {
         return const Color(0x0A000000);
     }
   }
+
+  // ============ 选中文字高亮 ============
+  static Color get selection {
+    switch (_themeType) {
+      case AppThemeType.dark:
+        return const Color(0xFF264F78);
+      case AppThemeType.freshForest:
+        return const Color(0xFFB4D7FF);
+      case AppThemeType.warmLight:
+      case AppThemeType.system:
+        return const Color(0xFFFFD6A5); // 温暖的橙色，符合暖光主题
+    }
+  }
+
+  // 选中文字 handles 颜色
+  static Color get selectionHandle {
+    switch (_themeType) {
+      case AppThemeType.dark:
+        return const Color(0xFF4A90D9);
+      case AppThemeType.freshForest:
+        return const Color(0xFF2196F3);
+      case AppThemeType.warmLight:
+      case AppThemeType.system:
+        return const Color(0xFFFF8C00);
+    }
+  }
 }

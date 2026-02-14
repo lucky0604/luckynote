@@ -70,38 +70,34 @@ class _EditorContentState extends ConsumerState<EditorContent> {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOut,
-        switchOutCurve: Curves.easeInOut,
-        transitionBuilder: (Widget child, Animation<double> animation) {
-          return FadeTransition(
-            opacity: animation,
-            child: child,
-          );
-        },
-        child: widget.editorState.viewMode == EditorViewMode.source
-            ? EditorWidthContainer(
-                key: const ValueKey('source_editor'),
-                child: SourceModeEditor(
-                  content: widget.editorState.rawMarkdown,
-                  onChanged: widget.onRawMarkdownChanged,
-                  onAutoSave: widget.onAutoSave,
-                  initialScrollRatio: widget.editorState.scrollRatio,
-                ),
-              )
-            : widget.editorState.document != null
-                ? EditorWidthContainer(
-                    key: const ValueKey('markdown_editor'),
-                    child: MarkdownEditor(
-                      key: widget.editorKey,
-                      document: widget.editorState.document!,
-                      onChanged: widget.onDocumentChanged,
-                      onAutoSave: widget.onAutoSave,
-                      initialScrollRatio: widget.editorState.scrollRatio,
-                    ),
-                  )
-                : const SizedBox.shrink(key: ValueKey('empty_editor')),
+      child: IndexedStack(
+        index: widget.editorState.viewMode == EditorViewMode.source ? 0 : 1,
+        sizing: StackFit.expand,
+        children: [
+          // 源码模式编辑器
+          EditorWidthContainer(
+            key: const ValueKey('source_editor'),
+            child: SourceModeEditor(
+              content: widget.editorState.rawMarkdown,
+              onChanged: widget.onRawMarkdownChanged,
+              onAutoSave: widget.onAutoSave,
+              initialScrollRatio: widget.editorState.scrollRatio,
+            ),
+          ),
+          // 预览模式编辑器
+          widget.editorState.document != null
+              ? EditorWidthContainer(
+                  key: const ValueKey('markdown_editor'),
+                  child: MarkdownEditor(
+                    key: widget.editorKey,
+                    document: widget.editorState.document!,
+                    onChanged: widget.onDocumentChanged,
+                    onAutoSave: widget.onAutoSave,
+                    initialScrollRatio: widget.editorState.scrollRatio,
+                  ),
+                )
+              : const SizedBox.shrink(key: ValueKey('empty_editor')),
+        ],
       ),
     );
   }

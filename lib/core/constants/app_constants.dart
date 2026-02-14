@@ -9,8 +9,8 @@ abstract final class AppConstants {
   /// 资源文件夹名称
   static const String assetsFolder = 'assets';
 
-  /// 自动保存延迟时间（毫秒）
-  static const int autoSaveDelayMs = 500;
+  /// 自动保存延迟时间（毫秒），2.5秒延迟避免频繁保存
+  static const int autoSaveDelayMs = 2500;
 
   /// 文件监听防抖时间（毫秒）
   static const int fileWatcherDebounceMs = 500;

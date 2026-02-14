@@ -11,6 +11,11 @@ abstract final class AppTheme {
     useMaterial3: true,
     brightness: Brightness.light,
     scaffoldBackgroundColor: AppColors.background,
+    // 选中文字高亮颜色 - 使用 textSelectionTheme
+    textSelectionTheme: TextSelectionThemeData(
+      selectionColor: AppColors.selection,
+      selectionHandleColor: AppColors.selectionHandle,
+    ),
     colorScheme: ColorScheme.light(
       primary: AppColors.accent,
       secondary: AppColors.accentSecondary,
@@ -186,6 +191,11 @@ abstract final class AppTheme {
     useMaterial3: true,
     brightness: Brightness.dark,
     scaffoldBackgroundColor: AppColors.background,
+    // 选中文字高亮颜色 - 使用 textSelectionTheme
+    textSelectionTheme: TextSelectionThemeData(
+      selectionColor: AppColors.selection,
+      selectionHandleColor: AppColors.selectionHandle,
+    ),
     colorScheme: ColorScheme.dark(
       primary: AppColors.accent,
       secondary: AppColors.accentSecondary,
