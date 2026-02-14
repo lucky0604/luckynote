@@ -5,6 +5,7 @@ import 'package:lucide_icons/lucide_icons.dart';
 import 'package:luckynote/app/theme/app_colors.dart';
 import 'package:luckynote/domains/search/data/repositories/global_search_repository.dart';
 import 'package:luckynote/domains/search/presentation/providers/global_search_provider.dart';
+import 'package:luckynote/domains/search/presentation/providers/search_history_provider.dart';
 import 'package:luckynote/domains/editor/presentation/providers/editor_provider.dart';
 
 /// 全局搜索对话框 (Cmd/Ctrl + P)
@@ -39,6 +40,7 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
 
   void _onQueryChanged() {
     ref.read(globalSearchProvider.notifier).search(_controller.text);
+    ref.read(searchHistoryQueryProvider.notifier).state = _controller.text;
     setState(() => _selectedIndex = 0);
   }
 
@@ -63,11 +65,24 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
         _scrollToSelected();
       }
     } else if (event.logicalKey == LogicalKeyboardKey.enter) {
-      if (results.isNotEmpty && _selectedIndex < results.length) {
-        _openNote(results[_selectedIndex]);
-      }
+      _handleEnter();
     } else if (event.logicalKey == LogicalKeyboardKey.escape) {
       Navigator.of(context).pop();
+    }
+  }
+
+  void _handleEnter() {
+    final state = ref.read(globalSearchProvider);
+    final results = state.results;
+
+    // 如果有搜索结果，打开选中的结果
+    if (results.isNotEmpty && _selectedIndex < results.length) {
+      final result = results[_selectedIndex];
+      ref.read(searchHistoryProvider.notifier).add(result.title);
+      _openNote(result);
+    } else if (_controller.text.isNotEmpty) {
+      // 没有结果时，保存搜索历史
+      ref.read(searchHistoryProvider.notifier).add(_controller.text);
     }
   }
 
@@ -145,6 +160,7 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
 
   Widget _buildResults() {
     final state = ref.watch(globalSearchProvider);
+    final suggestions = ref.watch(searchSuggestionsProvider);
 
     if (state.isSearching) {
       return Center(
@@ -152,13 +168,23 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
       );
     }
 
+    // 输入为空时显示搜索历史
     if (state.query.isEmpty) {
-      return Center(
-        child: Text(
-          '输入关键词搜索...',
-          style: TextStyle(color: AppColors.textPlaceholder),
-        ),
-      );
+      if (suggestions.isEmpty) {
+        return Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(LucideIcons.search, size: 48, color: AppColors.textPlaceholder),
+              const SizedBox(height: 16),
+              Text('输入关键词搜索...', style: TextStyle(color: AppColors.textPlaceholder)),
+              const SizedBox(height: 8),
+              Text('Ctrl/Cmd + P', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            ],
+          ),
+        );
+      }
+      return _buildSuggestionsList(suggestions);
     }
 
     if (state.results.isEmpty) {
@@ -166,12 +192,16 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(LucideIcons.searchX,
-                size: 48, color: AppColors.textPlaceholder),
+            Icon(LucideIcons.searchX, size: 48, color: AppColors.textPlaceholder),
             const SizedBox(height: 16),
-            Text(
-              '未找到结果',
-              style: TextStyle(color: AppColors.textSecondary),
+            Text('未找到结果', style: TextStyle(color: AppColors.textSecondary)),
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () {
+                ref.read(searchHistoryProvider.notifier).add(state.query);
+              },
+              icon: Icon(LucideIcons.history, size: 14),
+              label: Text('保存搜索: "${state.query}"'),
             ),
           ],
         ),
@@ -186,6 +216,49 @@ class _GlobalSearchDialogState extends ConsumerState<GlobalSearchDialog> {
         final isSelected = index == _selectedIndex;
         return _buildResultTile(result, isSelected);
       },
+    );
+  }
+
+  /// 构建搜索建议列表
+  Widget _buildSuggestionsList(List<String> suggestions) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Icon(LucideIcons.history, size: 14, color: AppColors.textSecondary),
+              const SizedBox(width: 8),
+              Text('最近搜索', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+              const Spacer(),
+              if (suggestions.isNotEmpty)
+                TextButton(
+                  onPressed: () => ref.read(searchHistoryProvider.notifier).clear(),
+                  style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size(0, 0)),
+                  child: Text('清除', style: TextStyle(fontSize: 11)),
+                ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            itemCount: suggestions.length,
+            itemBuilder: (context, index) {
+              final suggestion = suggestions[index];
+              return ListTile(
+                leading: Icon(LucideIcons.clock, size: 16, color: AppColors.textSecondary),
+                title: Text(suggestion, style: TextStyle(fontSize: 14)),
+                dense: true,
+                onTap: () {
+                  _controller.text = suggestion;
+                  ref.read(globalSearchProvider.notifier).search(suggestion);
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
