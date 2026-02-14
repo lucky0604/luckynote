@@ -99,13 +99,15 @@ class _SourceModeEditorState extends ConsumerState<SourceModeEditor> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return KeyboardListener(
       focusNode: FocusNode(),
       onKeyEvent: (KeyEvent event) {
         // Cmd/Ctrl + S 保存
         if (event is KeyDownEvent &&
             event.logicalKey == LogicalKeyboardKey.keyS) {
-          final isMac = Theme.of(context).platform == TargetPlatform.macOS;
+          final isMac = theme.platform == TargetPlatform.macOS;
           final modifiersPressed = isMac
               ? HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.meta)
               : HardwareKeyboard.instance.logicalKeysPressed.contains(LogicalKeyboardKey.control);
@@ -115,37 +117,39 @@ class _SourceModeEditorState extends ConsumerState<SourceModeEditor> {
           }
         }
       },
-      child: Padding(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppConstants.editorHorizontalPadding,
-          vertical: AppConstants.editorVerticalPadding,
-        ),
-        child: TextField(
-          controller: _controller,
-          focusNode: _focusNode,
-          scrollController: _scrollController,
-          maxLines: null,
-          expands: true,
-          textAlignVertical: TextAlignVertical.top,
-          // 光标颜色与主题色一致，保持视觉统一
-          cursorColor: AppColors.accent,
-          // 选中文本的颜色
-          selectionControls: MaterialTextSelectionControls(),
-          style: TextStyle(
-            fontSize: AppConstants.editorFontSize,
-            fontFamily: AppConstants.sourceModeFontFamily,
-            height: AppConstants.editorLineHeight,
-            color: AppColors.textPrimary,
+      child: Container(
+        color: Colors.transparent,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppConstants.editorHorizontalPadding,
+            vertical: AppConstants.editorVerticalPadding,
           ),
-          decoration: const InputDecoration(
-            border: InputBorder.none,
-            // 确保不填充背景色，保持"纸张"透明感
-            filled: false,
-            contentPadding: EdgeInsets.zero,
-            // 对齐预览模式的内边距
-            isDense: true,
+          child: TextField(
+            controller: _controller,
+            focusNode: _focusNode,
+            scrollController: _scrollController,
+            maxLines: null,
+            expands: true,
+            textAlignVertical: TextAlignVertical.top,
+            // 光标颜色与主题色一致
+            cursorColor: AppColors.accent,
+            selectionControls: MaterialTextSelectionControls(),
+            // 修复浅黄色背景问题：使用透明背景
+            style: TextStyle(
+              fontSize: AppConstants.editorFontSize,
+              fontFamily: AppConstants.sourceModeFontFamily,
+              height: AppConstants.editorLineHeight,
+              color: AppColors.textPrimary,
+            ),
+            decoration: InputDecoration(
+              border: InputBorder.none,
+              filled: true,
+              fillColor: Colors.transparent, // 透明背景，修复浅黄色问题
+              contentPadding: EdgeInsets.zero,
+              isDense: true,
+            ),
+            onChanged: _onChanged,
           ),
-          onChanged: _onChanged,
         ),
       ),
     );
