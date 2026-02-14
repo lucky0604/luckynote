@@ -16,6 +16,12 @@ class EditorKeyboardShortcuts {
             .contains(LogicalKeyboardKey.control);
   }
 
+  /// 检查是否按下了 Shift 键
+  static bool isShiftPressed(BuildContext context) {
+    return HardwareKeyboard.instance.logicalKeysPressed
+        .contains(LogicalKeyboardKey.shiftLeft);
+  }
+
   /// 处理键盘事件
   /// 返回 true 表示事件已处理，不需要进一步传播
   static bool handleKeyEvent({
@@ -25,11 +31,27 @@ class EditorKeyboardShortcuts {
     VoidCallback? onWikiLinkAutocomplete,
     VoidCallback? onNavigateToWikiLink,
     VoidCallback? onFind,
+    VoidCallback? onUndo,
+    VoidCallback? onRedo,
     Future<void> Function()? onImagePaste,
   }) {
     if (event is! KeyDownEvent) return false;
 
     final modifierPressed = isModifierPressed(context);
+    final shiftPressed = isShiftPressed(context);
+
+    // Cmd/Ctrl + Z: 撤销
+    if (event.logicalKey == LogicalKeyboardKey.keyZ && modifierPressed && !shiftPressed) {
+      onUndo?.call();
+      return true;
+    }
+
+    // Cmd/Ctrl + Shift + Z 或 Cmd/Ctrl + Y: 重做
+    if ((event.logicalKey == LogicalKeyboardKey.keyZ && modifierPressed && shiftPressed) ||
+        (event.logicalKey == LogicalKeyboardKey.keyY && modifierPressed)) {
+      onRedo?.call();
+      return true;
+    }
 
     // Cmd/Ctrl + S: 保存
     if (event.logicalKey == LogicalKeyboardKey.keyS && modifierPressed) {
@@ -77,6 +99,8 @@ class EditorKeyboardListener extends StatelessWidget {
     this.onWikiLinkAutocomplete,
     this.onNavigateToWikiLink,
     this.onFind,
+    this.onUndo,
+    this.onRedo,
     this.onImagePaste,
   });
 
@@ -85,6 +109,8 @@ class EditorKeyboardListener extends StatelessWidget {
   final VoidCallback? onWikiLinkAutocomplete;
   final VoidCallback? onNavigateToWikiLink;
   final VoidCallback? onFind;
+  final VoidCallback? onUndo;
+  final VoidCallback? onRedo;
 
   /// 图片粘贴回调（异步）
   final Future<void> Function()? onImagePaste;
@@ -101,6 +127,8 @@ class EditorKeyboardListener extends StatelessWidget {
           onWikiLinkAutocomplete: onWikiLinkAutocomplete,
           onNavigateToWikiLink: onNavigateToWikiLink,
           onFind: onFind,
+          onUndo: onUndo,
+          onRedo: onRedo,
           onImagePaste: onImagePaste,
         );
       },

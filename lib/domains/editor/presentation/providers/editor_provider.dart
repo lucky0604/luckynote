@@ -12,11 +12,17 @@ import '../../../shared_infra/providers/database_provider.dart';
 import '../../../notes/presentation/providers/file_watcher_provider.dart';
 import '../../../notes/presentation/providers/tags_provider.dart';
 import 'editor_state.dart';
+import 'editor_undo_stack.dart';
 import 'task_index_scheduler.dart';
 
 /// Markdown serializer Provider
 final markdownSerializerProvider = Provider<MarkdownSerializer>((ref) {
   return MarkdownSerializer();
+});
+
+/// 撤销重做状态 Provider
+final editorUndoStateProvider = Provider<EditorUndoState>((ref) {
+  return ref.watch(editorProvider.notifier).undoStack.state;
 });
 
 /// Editor state manager.
@@ -31,6 +37,12 @@ class EditorNotifier extends StateNotifier<EditorState> {
 
   final Ref _ref;
   late final TaskIndexScheduler _taskScheduler;
+  
+  /// 撤销重做栈
+  final EditorUndoStack undoStack = EditorUndoStack();
+  
+  /// 标记是否正在进行撤销/重做操作
+  bool _isUndoingOrRedoing = false;
 
   /// Last saved content hash to detect external changes
   String? _lastSavedContentHash;
@@ -73,10 +85,66 @@ class EditorNotifier extends StateNotifier<EditorState> {
 
   /// Mark the document as modified.
   void markDirty() {
+    // 如果正在进行撤销/重做，不记录快照
+    if (!_isUndoingOrRedoing) {
+      // 保存当前状态到撤销栈
+      undoStack.push(
+        rawMarkdown: state.rawMarkdown,
+        viewMode: state.viewMode,
+        scrollRatio: state.scrollRatio,
+      );
+    }
+    
     if (!state.isDirty) {
       state = state.copyWith(isDirty: true);
     }
     _scheduleTaskReindex();
+  }
+
+  /// 撤销操作
+  bool undo() {
+    if (!undoStack.canUndo) return false;
+    
+    final currentContent = _getCurrentEditorContent();
+    if (currentContent == null) return false;
+    
+    _isUndoingOrRedoing = true;
+    
+    final snapshot = undoStack.undo(currentContent);
+    if (snapshot != null) {
+      // 恢复状态
+      state = state.copyWith(
+        rawMarkdown: snapshot.rawMarkdown,
+        viewMode: snapshot.viewMode,
+        isDirty: true,
+      );
+    }
+    
+    _isUndoingOrRedoing = false;
+    return true;
+  }
+
+  /// 重做操作
+  bool redo() {
+    if (!undoStack.canRedo) return false;
+    
+    final currentContent = _getCurrentEditorContent();
+    if (currentContent == null) return false;
+    
+    _isUndoingOrRedoing = true;
+    
+    final snapshot = undoStack.redo(currentContent);
+    if (snapshot != null) {
+      // 恢复状态
+      state = state.copyWith(
+        rawMarkdown: snapshot.rawMarkdown,
+        viewMode: snapshot.viewMode,
+        isDirty: true,
+      );
+    }
+    
+    _isUndoingOrRedoing = false;
+    return true;
   }
 
   /// Save the current note.
@@ -356,6 +424,7 @@ class EditorNotifier extends StateNotifier<EditorState> {
 
   @override
   void dispose() {
+    undoStack.clear();
     _taskScheduler.dispose();
     super.dispose();
   }
