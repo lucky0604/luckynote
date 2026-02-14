@@ -6,6 +6,7 @@ import 'package:luckynote/core/constants/app_constants.dart';
 import 'package:luckynote/core/utils/debouncer.dart';
 import 'package:luckynote/domains/association/data/models/wikilink_attribution.dart';
 import 'package:luckynote/domains/editor/presentation/providers/clipboard_image_provider.dart';
+import 'package:luckynote/domains/editor/presentation/providers/editor_provider.dart';
 import 'package:luckynote/domains/editor/presentation/providers/find_replace_provider.dart';
 import 'code_block_component.dart';
 import 'editor_stylesheet.dart';
@@ -207,6 +208,8 @@ class MarkdownEditorState extends ConsumerState<MarkdownEditor>
       onNavigateToWikiLink: _handleNavigateToWikiLink,
       onFind: _handleFind,
       onImagePaste: _handleImagePaste,
+      onUndo: () => ref.read(editorProvider.notifier).undo(),
+      onRedo: () => ref.read(editorProvider.notifier).redo(),
       child: SuperEditor(
         editor: _editor,
         focusNode: _focusNode,
