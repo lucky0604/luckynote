@@ -13,6 +13,9 @@ import '../widgets/sidebar/sidebar.dart';
 import '../widgets/chat/chat_sidebar.dart';
 import '../widgets/global_search/global_search_dialog.dart';
 
+/// 侧边栏显示状态 Provider
+final sidebarVisibleProvider = StateProvider<bool>((ref) => true);
+
 /// 主界面
 /// 采用两栏布局：Sidebar + Editor
 class HomeScreen extends ConsumerStatefulWidget {
@@ -56,6 +59,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Future<void> _closeCurrentNote() async {
+    final editorState = ref.read(editorProvider);
+    if (editorState.currentNote != null) {
+      await ref.read(editorProvider.notifier).closeNote();
+    }
+  }
+
+  void _toggleSidebar() {
+    // 切换侧边栏显示状态
+    ref.read(sidebarVisibleProvider.notifier).state = 
+        !ref.read(sidebarVisibleProvider);
+  }
+
   @override
   Widget build(BuildContext context) {
     return CallbackShortcuts(
@@ -66,6 +82,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           meta: Theme.of(context).platform == TargetPlatform.macOS,
           control: Theme.of(context).platform != TargetPlatform.macOS,
         ): _createNewNote,
+        // Cmd/Ctrl + W: 关闭当前笔记
+        SingleActivator(
+          LogicalKeyboardKey.keyW,
+          meta: Theme.of(context).platform == TargetPlatform.macOS,
+          control: Theme.of(context).platform != TargetPlatform.macOS,
+        ): _closeCurrentNote,
+        // Cmd/Ctrl + \: 切换侧边栏
+        SingleActivator(
+          LogicalKeyboardKey.backslash,
+          meta: Theme.of(context).platform == TargetPlatform.macOS,
+          control: Theme.of(context).platform != TargetPlatform.macOS,
+        ): _toggleSidebar,
         // Cmd/Ctrl + S: 保存
         SingleActivator(
           LogicalKeyboardKey.keyS,
@@ -91,7 +119,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           body: Stack(
             children: [
               ResizableLayout(
-                sidebar: const Sidebar(),
+                sidebar: ref.watch(sidebarVisibleProvider) 
+                    ? const Sidebar() 
+                    : const SizedBox.shrink(),
                 noteList: const NavigationPanel(),
                 editor: const EditorPanel(),
               ),

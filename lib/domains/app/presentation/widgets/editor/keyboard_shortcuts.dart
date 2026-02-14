@@ -27,6 +27,10 @@ class EditorKeyboardShortcuts {
   static bool handleKeyEvent({
     required BuildContext context,
     required KeyEvent event,
+    VoidCallback? onNewNote,
+    VoidCallback? onCloseNote,
+    VoidCallback? onToggleSidebar,
+    VoidCallback? onOpenAIChat,
     VoidCallback? onSave,
     VoidCallback? onWikiLinkAutocomplete,
     VoidCallback? onNavigateToWikiLink,
@@ -39,6 +43,30 @@ class EditorKeyboardShortcuts {
 
     final modifierPressed = isModifierPressed(context);
     final shiftPressed = isShiftPressed(context);
+
+    // Cmd/Ctrl + N: 新建笔记
+    if (event.logicalKey == LogicalKeyboardKey.keyN && modifierPressed && !shiftPressed) {
+      onNewNote?.call();
+      return true;
+    }
+
+    // Cmd/Ctrl + W: 关闭当前笔记
+    if (event.logicalKey == LogicalKeyboardKey.keyW && modifierPressed && !shiftPressed) {
+      onCloseNote?.call();
+      return true;
+    }
+
+    // Cmd/Ctrl + \: 切换侧边栏
+    if (event.logicalKey == LogicalKeyboardKey.backslash && modifierPressed) {
+      onToggleSidebar?.call();
+      return true;
+    }
+
+    // Cmd/Ctrl + J: 打开 AI 助手
+    if (event.logicalKey == LogicalKeyboardKey.keyJ && modifierPressed && !shiftPressed) {
+      onOpenAIChat?.call();
+      return true;
+    }
 
     // Cmd/Ctrl + Z: 撤销
     if (event.logicalKey == LogicalKeyboardKey.keyZ && modifierPressed && !shiftPressed) {
@@ -95,6 +123,10 @@ class EditorKeyboardListener extends StatelessWidget {
   const EditorKeyboardListener({
     super.key,
     required this.child,
+    this.onNewNote,
+    this.onCloseNote,
+    this.onToggleSidebar,
+    this.onOpenAIChat,
     this.onSave,
     this.onWikiLinkAutocomplete,
     this.onNavigateToWikiLink,
@@ -105,6 +137,10 @@ class EditorKeyboardListener extends StatelessWidget {
   });
 
   final Widget child;
+  final VoidCallback? onNewNote;
+  final VoidCallback? onCloseNote;
+  final VoidCallback? onToggleSidebar;
+  final VoidCallback? onOpenAIChat;
   final VoidCallback? onSave;
   final VoidCallback? onWikiLinkAutocomplete;
   final VoidCallback? onNavigateToWikiLink;
@@ -123,6 +159,10 @@ class EditorKeyboardListener extends StatelessWidget {
         EditorKeyboardShortcuts.handleKeyEvent(
           context: context,
           event: event,
+          onNewNote: onNewNote,
+          onCloseNote: onCloseNote,
+          onToggleSidebar: onToggleSidebar,
+          onOpenAIChat: onOpenAIChat,
           onSave: onSave,
           onWikiLinkAutocomplete: onWikiLinkAutocomplete,
           onNavigateToWikiLink: onNavigateToWikiLink,
